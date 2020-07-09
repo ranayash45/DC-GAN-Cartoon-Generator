@@ -5,12 +5,10 @@ import argparse
 import os
 import random
 
-
 # Basic library for deep learning
 import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
-
 
 # Activation and Layer import
 import torch.optim as optim
@@ -26,51 +24,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from IPython.display import HTML
-
+from GlobalVariable import *
+from ImageGenerator import Generator
+from ImageDiscriminator import Discriminator 
 
 if __name__ == "__main__":
-    #Set random seed for reproduciblity
-    manualSeed = 999
-
-    print("Random Seed: ",manualSeed)
-    random.seed(manualSeed)
-    torch.manual_seed(manualSeed)
-
-    #Root Directory for dataset
-    dataroot = "D:\cartoon_dataset"
-
-    #Number of workers for dataloader
-    workers = 1
-
-    #Batch Size for training
-    batch_size = 24
-
-    #Spatial Size of training images
-    image_size = 64
-
-    #Number of channels in training images
-    nc = 3
-
-    #Size of generator input 
-    nz = 100
-
-    #Size of feature maps in generator
-    ngf = 64
-
-    #Size of feature maps in discriminator
-    ndf = 64
-
-    #Number of Epochs
-    num_epochs = 3
-
-    #Learning Rate for optimizers
-    lr = 0.00002
-
-    #Beta1 hyperparam for adam optimizers
-    beta1 = 0.5
-
-    #Number of GPUs available
-    ngpu = 0
+    
 
     #Create Dataset
     dataset = dset.ImageFolder(
@@ -107,36 +66,6 @@ if __name__ == "__main__":
             nn.init.normal_(m.weight.data, 1.0, 0.02)
             nn.init.constant_(m.bias.data, 0)
 
-    class Generator(nn.Module):
-        def __init__(self, ngpu):
-            super(Generator, self).__init__()
-            self.ngpu = ngpu
-            self.main = nn.Sequential(
-                # input is Z, going into a convolution
-                nn.ConvTranspose2d( nz, ngf * 8, 4, 1, 0, bias=False),
-                nn.BatchNorm2d(ngf * 8),
-                nn.ReLU(True),
-                # state size. (ngf*8) x 4 x 4
-                nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1, bias=False),
-                nn.BatchNorm2d(ngf * 4),
-                nn.ReLU(True),
-                # state size. (ngf*4) x 8 x 8
-                nn.ConvTranspose2d( ngf * 4, ngf * 2, 4, 2, 1, bias=False),
-                nn.BatchNorm2d(ngf * 2),
-                nn.ReLU(True),
-                # state size. (ngf*2) x 16 x 16
-                nn.ConvTranspose2d( ngf * 2, ngf, 4, 2, 1, bias=False),
-                nn.BatchNorm2d(ngf),
-                nn.ReLU(True),
-                # state size. (ngf) x 32 x 32
-                nn.ConvTranspose2d( ngf, nc, 4, 2, 1, bias=False),
-                nn.Tanh()
-                # state size. (nc) x 64 x 64
-            )
-
-        def forward(self, input):
-            return self.main(input)
-
     # Create the generator
     netG = Generator(ngpu).to(device)
 
@@ -151,34 +80,7 @@ if __name__ == "__main__":
     # Print the model
     print(netG)
 
-    class Discriminator(nn.Module):
-        def __init__(self, ngpu):
-            super(Discriminator, self).__init__()
-            self.ngpu = ngpu
-            self.main = nn.Sequential(
-                # input is (nc) x 64 x 64
-                nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
-                nn.LeakyReLU(0.2, inplace=True),
-                # state size. (ndf) x 32 x 32
-                nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
-                nn.BatchNorm2d(ndf * 2),
-                nn.LeakyReLU(0.2, inplace=True),
-                # state size. (ndf*2) x 16 x 16
-                nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=False),
-                nn.BatchNorm2d(ndf * 4),
-                nn.LeakyReLU(0.2, inplace=True),
-                # state size. (ndf*4) x 8 x 8
-                nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=False),
-                nn.BatchNorm2d(ndf * 8),
-                nn.LeakyReLU(0.2, inplace=True),
-                # state size. (ndf*8) x 4 x 4
-                nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=False),
-                nn.Sigmoid()
-            )
-
-        def forward(self, input):
-            return self.main(input)
-
+    
     # Create the Discriminator
     netD = Discriminator(ngpu).to(device)
 
@@ -253,6 +155,7 @@ if __name__ == "__main__":
             # Calculate the gradients for this batch
             errD_fake.backward()
             D_G_z1 = output.mean().item()
+
             # Add the gradients from the all-real and all-fake batches
             errD = errD_real + errD_fake
             # Update D
